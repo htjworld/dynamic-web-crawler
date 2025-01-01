@@ -10,6 +10,8 @@ from packaging import version  # For version comparison
 import subprocess
 import time
 import json
+import threading
+
 
 def select_save_path():
     """사용자가 저장할 파일 경로를 선택"""
@@ -106,6 +108,63 @@ def CDfind(title,tag):
     title = driver.find_element(By.CSS_SELECTOR, tag) #태그 안 내용 저장
     return title
 
+# Global delay configuration
+delay_configurations = []
+
+def add_delay_configuration():
+    """Add a new delay configuration input."""
+    global delay_configurations
+    frame = tk.Frame(delay_frame)
+    frame.pack(pady=5)
+
+    # Default values
+    default_period = 10 ** (len(delay_configurations))
+    period_label = tk.Label(frame, text="주기:")
+    period_label.grid(row=0, column=0, padx=5)
+    period_entry = tk.Entry(frame, width=10)
+    period_entry.insert(0, str(default_period))
+    period_entry.grid(row=0, column=1, padx=5)
+
+    time_label = tk.Label(frame, text="시간:")
+    time_label.grid(row=0, column=2, padx=5)
+    time_entry = tk.Entry(frame, width=10)
+    time_entry.insert(0, "0.5")
+    time_entry.grid(row=0, column=3, padx=5)
+
+    delay_configurations.append((period_entry, time_entry))
+
+def validate_delays():
+    """Validate user inputs for delay configurations."""
+    global delay_configurations
+    validated_delays = []
+    for period_entry, time_entry in delay_configurations:
+        try:
+            period = int(period_entry.get())
+            delay_time = float(time_entry.get())
+            validated_delays.append((period, delay_time))
+        except ValueError:
+            messagebox.showerror("Error", "주기는 정수, 시간은 실수로 입력해야 합니다.")
+            return None
+    return validated_delays
+
+def apply_delays(idx):
+    """Apply delay based on the current index and user configurations."""
+    global delay_configurations
+    for period_entry, time_entry in delay_configurations:
+        try:
+            # Extract values from Entry widgets
+            period = int(period_entry.get())
+            delay_time = float(time_entry.get())
+
+            # Apply delay
+            if idx % period == 0:
+                print(f"Applying delay of {delay_time} seconds at cycle {idx}")
+                time.sleep(delay_time)
+        except ValueError:
+            # Handle invalid entries gracefully
+            messagebox.showerror("Error", "주기는 정수, 시간은 실수로 입력해야 합니다.")
+            return
+
 def crawl_data(URL_TMPL, URL_INPUT, TITLE_TAG):
     driver = webdriver.Chrome()
     # URL_INPUT : 리스트를 리스트가 감싼 형태 [[1,20240102,3],[1,20240103,4]...]
@@ -148,37 +207,60 @@ def crawl_data(URL_TMPL, URL_INPUT, TITLE_TAG):
 
         print(f"[{idx + 1}/{len(URL_INPUT)}] 크롤링 완료: {url}")
 
+        # Apply delay logic
+        apply_delays(idx)
+
     driver.quit()
 
     # 결과를 파일에 저장
     save_data_to_file(results)
 
-def crawl_data_gui():
+def run_crawl():
     try:
         # 입력 값 가져오기
         url_template = url_template_entry.get()
         url_input_raw = url_input_entry.get()
         title_tag_raw = title_tag_entry.get()
 
-        # 데이터 파싱
-        url_input = eval(url_input_raw)
-        title_tag = eval(title_tag_raw)
+        # JSON 데이터로 파싱
+        url_input = json.loads(url_input_raw)
+        title_tag = json.loads(title_tag_raw)
 
         if not url_template or not url_input or not title_tag:
-            messagebox.showwarning("Input Missing", "Please fill in all the fields before starting.")
+            messagebox.showwarning("Input Missing", "Please fill in all fields before starting.")
             return
-        
-        # 함수 호출
+
+        # Validate delay configurations
+        validated_delays = validate_delays()
+        if validated_delays is None:
+            return
+
+        # 크롤링 실행
         crawl_data(url_template, url_input, title_tag)
+
         messagebox.showinfo("Success", "Crawling completed successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Error during crawling: {e}")
+    finally:
+        root.after(0, lambda: crawl_button.config(state=tk.NORMAL))
+
+
+def crawl_data_gui():
+    try:
+        # 버튼 비활성화
+        crawl_button.config(state=tk.DISABLED)
+        # 스레드 실행
+        threading.Thread(target=run_crawl, daemon=True).start()
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Unexpected Error: {e}")
+        crawl_button.config(state=tk.NORMAL)
 
 
 # Tkinter GUI 설정
 root = tk.Tk()
 root.title("Dynamic Web Crawler")
-root.geometry("500x500")
+root.geometry("500x700")
 
 # 1. Selenium Update 버튼
 update_button = tk.Button(root, text="Update Selenium", command=update_selenium, width=20)
@@ -202,7 +284,15 @@ url_input_entry.insert(0, "[[33549], [33988], [33943], [33887]]")
 ttk.Label(root, text="Title Tags (list of dict):").pack(pady=5)
 title_tag_entry = tk.Entry(root, width=50)
 title_tag_entry.pack(pady=5)
-title_tag_entry.insert(0, "[{'title': 'h1.MuiTypography-root'}, {'spec': 'h3.MuiTypography-root'}]")
+title_tag_entry.insert(0, '[{"title": "h1.MuiTypography-root"}, {"spec": "h3.MuiTypography-root"}]')
+
+# Delay Configuration Section
+ttk.Label(root, text="시간 지연 추가:").pack(pady=5)
+delay_frame = tk.Frame(root)
+delay_frame.pack(pady=5)
+add_delay_button = tk.Button(root, text="+", command=add_delay_configuration)
+add_delay_button.pack(pady=10)
+
 
 crawl_button = tk.Button(root, text="Start Crawling", command=crawl_data_gui, width=20)
 crawl_button.pack(pady=20)
