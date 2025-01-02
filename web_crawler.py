@@ -23,20 +23,52 @@ def select_save_path():
     return save_path
 
 def save_data_to_file(data):
-    """데이터를 선택한 경로에 저장"""
-    save_path = select_save_path()
+    """사용자가 선택한 포맷에 따라 데이터를 저장"""
+    # 파일 형식 선택
+    filetypes = [("JSON files", "*.json"), ("JSONL files", "*.jsonl"), ("CSV files", "*.csv"), ("All files", "*.*")]
+    save_path = filedialog.asksaveasfilename(
+        title="Select File to Save (Formats: JSON, JSONL, CSV)",
+        defaultextension=".jsonl",
+        filetypes=filetypes
+    )
     if not save_path:
         messagebox.showwarning("No File Selected", "No file selected. Data was not saved.")
         return
 
     try:
-        with open(save_path, "w", encoding="utf-8") as file:
-            for record in data:
-                file.write(json.dumps(record, ensure_ascii=False) + "\n")
-        messagebox.showinfo("Success", f"Data successfully saved to {save_path}")
+        # 파일 확장자에 따라 저장 형식 결정
+        if save_path.endswith(".json"):
+            save_as_json(data, save_path)
+        elif save_path.endswith(".jsonl"):
+            save_as_jsonl(data, save_path)
+        elif save_path.endswith(".csv"):
+            save_as_csv(data, save_path)
+        else:
+            messagebox.showerror("Unsupported Format", "Unsupported file format selected.")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save data: {e}")
 
+def save_as_json(data, save_path):
+    """JSON 포맷으로 저장"""
+    with open(save_path, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
+    messagebox.showinfo("Success", f"Data successfully saved as JSON to {save_path}")
+
+def save_as_jsonl(data, save_path):
+    """JSONL 포맷으로 저장"""
+    with open(save_path, "w", encoding="utf-8") as file:
+        for record in data:
+            file.write(json.dumps(record, ensure_ascii=False) + "\n")
+    messagebox.showinfo("Success", f"Data successfully saved as JSONL to {save_path}")
+
+def save_as_csv(data, save_path):
+    """CSV 포맷으로 저장"""
+    import csv
+    with open(save_path, "w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+    messagebox.showinfo("Success", f"Data successfully saved as CSV to {save_path}")
 
 # Selenium 패키지 업데이트
 def update_selenium():
