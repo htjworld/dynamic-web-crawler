@@ -13,22 +13,13 @@ import json
 import threading
 
 
-def select_save_path():
-    """사용자가 저장할 파일 경로를 선택"""
-    save_path = filedialog.asksaveasfilename(
-        title="Select File to Save",
-        defaultextension=".jsonl",
-        filetypes=[("JSONL files", "*.jsonl"), ("All files", "*.*")]
-    )
-    return save_path
-
 def save_data_to_file(data):
     """사용자가 선택한 포맷에 따라 데이터를 저장"""
     # 파일 형식 선택
     filetypes = [("JSON files", "*.json"), ("JSONL files", "*.jsonl"), ("CSV files", "*.csv"), ("All files", "*.*")]
     save_path = filedialog.asksaveasfilename(
         title="Select File to Save (Formats: JSON, JSONL, CSV)",
-        defaultextension=".jsonl",
+        defaultextension=".json",
         filetypes=filetypes
     )
     if not save_path:
