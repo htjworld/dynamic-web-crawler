@@ -73,7 +73,6 @@ def update_selenium():
 def get_installed_chrome_version():
     """Get the installed Chrome version."""
     try:
-        # Command to fetch the Chrome version
         if os.name == "nt":  # Windows
             result = subprocess.run(["reg", "query", r"HKLM\Software\Google\Chrome\BLBeacon", "/v", "version"],
                                     capture_output=True, text=True)
@@ -126,10 +125,10 @@ def version_check():
         messagebox.showerror(f"에러 발생:ChromeDriver 또는 Chrome 설치를 확인하고 다시 시도해주세요.{e}", e)
 
 
-
-def CDfind(title,tag):
-    title = driver.find_element(By.CSS_SELECTOR, tag) #태그 안 내용 저장
-    return title
+# 사용 안됨
+# def CDfind(title,tag):
+#     value = driver.find_element(By.CSS_SELECTOR, tag) #태그 안 내용 저장
+#     return value
 
 # Global delay configuration
 delay_configurations = []
