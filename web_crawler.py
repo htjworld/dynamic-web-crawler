@@ -124,11 +124,7 @@ def version_check():
     except Exception as e:
         messagebox.showerror(f"에러 발생:ChromeDriver 또는 Chrome 설치를 확인하고 다시 시도해주세요.{e}", e)
 
-
-# 사용 안됨
-# def CDfind(title,tag):
-#     value = driver.find_element(By.CSS_SELECTOR, tag) #태그 안 내용 저장
-#     return value
+# Todo. 글로벌 변수 로컬 변수로 대체
 
 # Global delay configuration
 delay_configurations = []
