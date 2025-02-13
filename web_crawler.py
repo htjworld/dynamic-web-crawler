@@ -62,15 +62,15 @@ def save_as_csv(data, save_path):
     messagebox.showinfo("Success", f"Data successfully saved as CSV to {save_path}")
 
 # Selenium 패키지 업데이트
-def update_selenium():
-    try:
-        os.system("pip install -U selenium")
-        messagebox.showinfo("Success", "Selenium has been updated!")
-    except Exception as e:
-        messagebox.showerror("Error", f"Error updating Selenium: {e}")
+# def update_selenium():
+#     try:
+#         os.system("pip install -U selenium")
+#         messagebox.showinfo("Success", "Selenium has been updated!")
+#     except Exception as e:
+#         messagebox.showerror("Error", f"Error updating Selenium: {e}")
 
 # 크롬 버전 확인
-def get_installed_chrome_version():
+# def get_installed_chrome_version():
     """Get the installed Chrome version."""
     try:
         if os.name == "nt":  # Windows
@@ -87,42 +87,42 @@ def get_installed_chrome_version():
         return None
 
 # 크롬과 크롬드라이버 버전 호환 체크
-def version_check():
-    try:
-        # ChromeDriver를 사용하여 Chrome 브라우저 인스턴스 생성
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless=new")
-        driver = webdriver.Chrome(options=options) #headless
+# def version_check():
+#     try:
+#         # ChromeDriver를 사용하여 Chrome 브라우저 인스턴스 생성
+#         options = webdriver.ChromeOptions()
+#         options.add_argument("--headless=new")
+#         driver = webdriver.Chrome(options=options) #headless
 
-        # 버전 정보 가져오기
-        chrome_version = get_installed_chrome_version()
-        driver_version = driver.capabilities['chrome']['chromedriverVersion']
-        messagebox.showinfo("Version Check",
-                            f"Chrome 버전: {chrome_version}\n"
-                            f"Chrome Driver 버전: {driver_version}")
+#         # 버전 정보 가져오기
+#         chrome_version = get_installed_chrome_version()
+#         driver_version = driver.capabilities['chrome']['chromedriverVersion']
+#         messagebox.showinfo("Version Check",
+#                             f"Chrome 버전: {chrome_version}\n"
+#                             f"Chrome Driver 버전: {driver_version}")
 
-        chrome_version = chrome_version.split('.')[0]
-        driver_version = driver_version.split('.')[0]
+#         chrome_version = chrome_version.split('.')[0]
+#         driver_version = driver_version.split('.')[0]
 
-       # 버전 비교 및 메시지 출력
-        if chrome_version == driver_version:
-            message = "유효합니다: Chrome과 ChromeDriver 버전이 일치합니다."
-            print(message)
-            messagebox.showinfo("Version Check", message)
-        elif int(chrome_version) > int(driver_version):
-            message = f"ChromeDriver를 {chrome_version}.x 버전으로 업데이트해주세요."
-            print(message)
-            messagebox.showwarning("Version Mismatch", message)
-        else:
-            message = f"Chrome을 {driver_version}.x 버전으로 업데이트해주세요."
-            print(message)
-            messagebox.showwarning("Version Mismatch", message)
+#        # 버전 비교 및 메시지 출력
+#         if chrome_version == driver_version:
+#             message = "유효합니다: Chrome과 ChromeDriver 버전이 일치합니다."
+#             print(message)
+#             messagebox.showinfo("Version Check", message)
+#         elif int(chrome_version) > int(driver_version):
+#             message = f"ChromeDriver를 {chrome_version}.x 버전으로 업데이트해주세요."
+#             print(message)
+#             messagebox.showwarning("Version Mismatch", message)
+#         else:
+#             message = f"Chrome을 {driver_version}.x 버전으로 업데이트해주세요."
+#             print(message)
+#             messagebox.showwarning("Version Mismatch", message)
 
-        # 드라이버 종료
-        driver.quit()
+#         # 드라이버 종료
+#         driver.quit()
         
-    except Exception as e:
-        messagebox.showerror(f"에러 발생:ChromeDriver 또는 Chrome 설치를 확인하고 다시 시도해주세요.{e}", e)
+#     except Exception as e:
+#         messagebox.showerror(f"에러 발생:ChromeDriver 또는 Chrome 설치를 확인하고 다시 시도해주세요.{e}", e)
 
 # Todo. 글로벌 변수 로컬 변수로 대체
 
@@ -278,15 +278,15 @@ def crawl_data_gui():
 # Tkinter GUI 설정
 root = tk.Tk()
 root.title("Dynamic Web Crawler")
-root.geometry("500x700")
+root.geometry("500x500")
 
 # 1. Selenium Update 버튼
-update_button = tk.Button(root, text="Update Selenium", command=update_selenium, width=20)
-update_button.pack(pady=10)
+# update_button = tk.Button(root, text="Update Selenium", command=update_selenium, width=20)
+# update_button.pack(pady=10)
 
 # 2. Version Check 버튼
-version_check_button = tk.Button(root, text="Check Version", command=version_check, width=20)
-version_check_button.pack(pady=10)
+# version_check_button = tk.Button(root, text="Check Version", command=version_check, width=20)
+# version_check_button.pack(pady=10)
 
 # 3. Crawl Data 섹션
 ttk.Label(root, text="URL Template:").pack(pady=5)
