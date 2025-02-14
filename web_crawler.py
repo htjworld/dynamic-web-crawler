@@ -2,9 +2,6 @@ import os
 import tkinter as tk
 from tkinter import messagebox, ttk, filedialog
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from packaging import version  # For version comparison
 import subprocess
@@ -60,6 +57,50 @@ def save_as_csv(data, save_path):
         writer.writeheader()
         writer.writerows(data)
     messagebox.showinfo("Success", f"Data successfully saved as CSV to {save_path}")
+
+# json 파일 불러오기
+def load_json_data(entry_widget):
+    """JSON 또는 JSONL 파일을 불러와 해당 Entry 필드에 데이터 입력"""
+    file_path = filedialog.askopenfilename(
+        title="Select JSON or JSONL File",
+        filetypes=[("JSON files", "*.json"), ("JSONL files", "*.jsonl"), ("All files", "*.*")]
+    )
+
+    if not file_path:
+        return  # 사용자가 파일을 선택하지 않음
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            # 확장자에 따라 JSON 또는 JSONL 처리
+            if file_path.endswith(".json"):
+                data = json.load(file)
+            elif file_path.endswith(".jsonl"):
+                data = [json.loads(line) for line in file]
+            else:
+                messagebox.showerror("Error", "Unsupported file format.")
+                return
+
+            # 데이터가 리스트 형식인지 확인
+            if not isinstance(data, list):
+                messagebox.showerror("Error", "Invalid file format. Data should be a list.")
+                return
+            
+            # 리스트 내부 값이 딕셔너리인지 확인 후 Value 값만 추출
+            processed_data = []
+            for item in data:
+                if isinstance(item, dict):
+                    processed_data.append(list(item.values()))  # Value 값만 추출
+                else:
+                    messagebox.showerror("Error", "Invalid data format inside the list.")
+                    return
+
+            # JSON 데이터를 Entry 필드에 입력 (문자열 변환)
+            entry_widget.delete(0, tk.END)
+            entry_widget.insert(0, json.dumps(processed_data, ensure_ascii=False))
+            messagebox.showinfo("Success", "File loaded successfully.")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load file: {e}")
 
 # Selenium 패키지 업데이트
 # def update_selenium():
@@ -298,6 +339,8 @@ ttk.Label(root, text="URL Input (list):").pack(pady=5)
 url_input_entry = tk.Entry(root, width=50)
 url_input_entry.pack(pady=5)
 url_input_entry.insert(0, "[[33549], [33988], [33943], [33887]]")
+url_load_button = tk.Button(root, text="Load JSON/JSONL File", command=lambda: load_json_data(url_input_entry))
+url_load_button.pack(pady=5)
 
 ttk.Label(root, text="Title Tags (list of dict):").pack(pady=5)
 title_tag_entry = tk.Entry(root, width=50)
