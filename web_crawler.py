@@ -9,98 +9,7 @@ import time
 import json
 import threading
 
-
-def save_data_to_file(data):
-    """사용자가 선택한 포맷에 따라 데이터를 저장"""
-    # 파일 형식 선택
-    filetypes = [("JSON files", "*.json"), ("JSONL files", "*.jsonl"), ("CSV files", "*.csv"), ("All files", "*.*")]
-    save_path = filedialog.asksaveasfilename(
-        title="Select File to Save (Formats: JSON, JSONL, CSV)",
-        defaultextension=".json",
-        filetypes=filetypes
-    )
-    if not save_path:
-        messagebox.showwarning("No File Selected", "No file selected. Data was not saved.")
-        return
-
-    try:
-        # 파일 확장자에 따라 저장 형식 결정
-        if save_path.endswith(".json"):
-            save_as_json(data, save_path)
-        elif save_path.endswith(".jsonl"):
-            save_as_jsonl(data, save_path)
-        elif save_path.endswith(".csv"):
-            save_as_csv(data, save_path)
-        else:
-            messagebox.showerror("Unsupported Format", "Unsupported file format selected.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to save data: {e}")
-
-def save_as_json(data, save_path):
-    """JSON 포맷으로 저장"""
-    with open(save_path, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-    messagebox.showinfo("Success", f"Data successfully saved as JSON to {save_path}")
-
-def save_as_jsonl(data, save_path):
-    """JSONL 포맷으로 저장"""
-    with open(save_path, "w", encoding="utf-8") as file:
-        for record in data:
-            file.write(json.dumps(record, ensure_ascii=False) + "\n")
-    messagebox.showinfo("Success", f"Data successfully saved as JSONL to {save_path}")
-
-def save_as_csv(data, save_path):
-    """CSV 포맷으로 저장"""
-    import csv
-    with open(save_path, "w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=data[0].keys())
-        writer.writeheader()
-        writer.writerows(data)
-    messagebox.showinfo("Success", f"Data successfully saved as CSV to {save_path}")
-
-# json 파일 불러오기
-def load_json_data(entry_widget):
-    """JSON 또는 JSONL 파일을 불러와 해당 Entry 필드에 데이터 입력"""
-    file_path = filedialog.askopenfilename(
-        title="Select JSON or JSONL File",
-        filetypes=[("JSON files", "*.json"), ("JSONL files", "*.jsonl"), ("All files", "*.*")]
-    )
-
-    if not file_path:
-        return  # 사용자가 파일을 선택하지 않음
-
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            # 확장자에 따라 JSON 또는 JSONL 처리
-            if file_path.endswith(".json"):
-                data = json.load(file)
-            elif file_path.endswith(".jsonl"):
-                data = [json.loads(line) for line in file]
-            else:
-                messagebox.showerror("Error", "Unsupported file format.")
-                return
-
-            # 데이터가 리스트 형식인지 확인
-            if not isinstance(data, list):
-                messagebox.showerror("Error", "Invalid file format. Data should be a list.")
-                return
-            
-            # 리스트 내부 값이 딕셔너리인지 확인 후 Value 값만 추출
-            processed_data = []
-            for item in data:
-                if isinstance(item, dict):
-                    processed_data.append(list(item.values()))  # Value 값만 추출
-                else:
-                    messagebox.showerror("Error", "Invalid data format inside the list.")
-                    return
-
-            # JSON 데이터를 Entry 필드에 입력 (문자열 변환)
-            entry_widget.delete(0, tk.END)
-            entry_widget.insert(0, json.dumps(processed_data, ensure_ascii=False))
-            messagebox.showinfo("Success", "File loaded successfully.")
-
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to load file: {e}")
+from data_handler import save_data_to_file, load_json_data
 
 # Selenium 패키지 업데이트
 # def update_selenium():
@@ -112,22 +21,23 @@ def load_json_data(entry_widget):
 
 # 크롬 버전 확인
 # def get_installed_chrome_version():
-    """Get the installed Chrome version."""
-    try:
-        if os.name == "nt":  # Windows
-            result = subprocess.run(["reg", "query", r"HKLM\Software\Google\Chrome\BLBeacon", "/v", "version"],
-                                    capture_output=True, text=True)
-            return result.stdout.split()[-1]
-        elif os.name == "posix":  # macOS / Linux
-            # Specify the Chrome executable path for macOS
-            chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-            result = subprocess.run([chrome_path, "--version"], capture_output=True, text=True)
-            return result.stdout.strip().split(" ")[-1]
-    except Exception as e:
-        print(f"Error fetching Chrome version: {e}")
-        return None
+#     """Get the installed Chrome version."""
+#     try:
+#         if os.name == "nt":  # Windows
+#             result = subprocess.run(["reg", "query", r"HKLM\Software\Google\Chrome\BLBeacon", "/v", "version"],
+#                                     capture_output=True, text=True)
+#             return result.stdout.split()[-1]
+#         elif os.name == "posix":  # macOS / Linux
+#             # Specify the Chrome executable path for macOS
+#             chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+#             result = subprocess.run([chrome_path, "--version"], capture_output=True, text=True)
+#             return result.stdout.strip().split(" ")[-1]
+#     except Exception as e:
+#         print(f"Error fetching Chrome version: {e}")
+#         return None
 
 # 크롬과 크롬드라이버 버전 호환 체크
+# 셀레니움 4.6.0 버전 이후로는 셀레니움 매니저를 통해 크롬드라이버가 자동으로 관리되므로 버전 체크가 필요 없어짐
 # def version_check():
 #     try:
 #         # ChromeDriver를 사용하여 Chrome 브라우저 인스턴스 생성
@@ -168,7 +78,7 @@ def load_json_data(entry_widget):
 # Todo. 글로벌 변수 로컬 변수로 대체
 
 # Global delay configuration
-delay_configurations = []
+delay_configurations = [] # 각 delay 위젯의 참조 주소가 저장됨
 
 def add_delay_configuration():
     """Add a new delay configuration input."""
@@ -229,13 +139,41 @@ def crawl_data(URL_TMPL, URL_INPUT, TITLE_TAG):
     # URL_INPUT : 리스트를 리스트가 감싼 형태 [[1,20240102,3],[1,20240103,4]...]
     # TITLE_TAG : 딕셔너리를 리스트가 감싼 형태 [{title : tag}, {spec, h3.MuiTypography-root}, ...]
 
-    # URL_TMPL의 {} 개수 확인
+    # URL_TMPL의 {} 개수
     placeholders = URL_TMPL.count("{}")
-    if placeholders == 0:
-        raise ValueError("URL_TMPL에는 최소 하나 이상의 '{}' 플레이스홀더가 필요합니다.")
 
+    # URL_INPUT이 None, 빈 리스트([]), [[]] 중 하나이면 처리
+    if not URL_INPUT or URL_INPUT == [[]]:
+        if placeholders == 0:
+            # URL에 `{}`가 없으면 그대로 크롤링
+            url = URL_TMPL
+            driver.get(url=url)
+            driver.implicitly_wait(3)  # 페이지 로드 대기
+
+            extracted_data = {}
+            for tag_info in TITLE_TAG:
+                for key, tag in tag_info.items():
+                    try:
+                        element = driver.find_element(By.CSS_SELECTOR, tag)
+                        extracted_data[key] = element.text
+                    except Exception as e:
+                        print(f"태그 {tag}에 대한 데이터 수집 중 오류 발생: {e}")
+                        extracted_data[key] = None
+
+            # 결과를 리스트에 추가
+            results = [{"url": url, **extracted_data}]
+            print(f"단일 URL 크롤링 완료: {url}")
+            driver.quit()
+            save_data_to_file(results)
+            return
+        else:
+            messagebox.showerror("Error", "URL_TEMPLATE에 {}가 포함되어 있지만, URL_INPUT이 비어 있습니다.")
+            driver.quit()
+            return
+    
     results = []  # 결과를 저장할 리스트
 
+    # URL_INPUT이 정상적인 리스트인 경우 기존 방식대로 실행
     for idx, data in enumerate(URL_INPUT):
         if len(data) != placeholders:
             raise ValueError(f"URL_INPUT의 요소 길이가 URL_TMPL의 {{}} 개수와 일치하지 않습니다: {data}")
@@ -277,16 +215,40 @@ def crawl_data(URL_TMPL, URL_INPUT, TITLE_TAG):
 def run_crawl():
     try:
         # 입력 값 가져오기
-        url_template = url_template_entry.get()
-        url_input_raw = url_input_entry.get()
-        title_tag_raw = title_tag_entry.get()
+        url_template = url_template_entry.get().strip()
+        url_input_raw = url_input_entry.get().strip()
+        title_tag_raw = title_tag_entry.get().strip()
 
+        # 빈 입력값 처리
+        if not url_template:
+            messagebox.showwarning("Input Error", "URL Template을 입력하세요.")
+            return
+        
+        if not title_tag_raw:
+            messagebox.showwarning("Input Error", "Title Tags 필드를 입력하세요.")
+            return
+        
         # JSON 데이터로 파싱
-        url_input = json.loads(url_input_raw)
-        title_tag = json.loads(title_tag_raw)
-
-        if not url_template or not url_input or not title_tag:
-            messagebox.showwarning("Input Missing", "Please fill in all fields before starting.")
+        if not url_input_raw:
+            url_input = None
+        else:
+            try:
+                url_input = json.loads(url_input_raw)  # JSON 파싱
+                if not isinstance(url_input, list):  # 리스트 형식이 아니면 오류 처리
+                    messagebox.showwarning("Input Error", "URL Input은 리스트 형식이어야 합니다.")
+                    return
+            except json.JSONDecodeError as e:
+                messagebox.showerror("Error", f"URL Input JSON 형식이 올바르지 않습니다: {e}")
+                return
+        
+        # Title Tags JSON 파싱
+        try:
+            title_tag = json.loads(title_tag_raw)
+            if not isinstance(title_tag, list):  # 리스트 형식이 아니면 오류 처리
+                messagebox.showwarning("Input Error", "Title Tags는 리스트 형식이어야 합니다.")
+                return
+        except json.JSONDecodeError as e:
+            messagebox.showerror("Error", f"Title Tags JSON 형식이 올바르지 않습니다: {e}")
             return
 
         # Validate delay configurations
@@ -296,7 +258,6 @@ def run_crawl():
 
         # 크롤링 실행
         crawl_data(url_template, url_input, title_tag)
-
         messagebox.showinfo("Success", "Crawling completed successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Error during crawling: {e}")
