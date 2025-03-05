@@ -134,82 +134,80 @@ def apply_delays(idx):
             messagebox.showerror("Error", "주기는 정수, 시간은 실수로 입력해야 합니다.")
             return
 
-def crawl_data(URL_TMPL, URL_INPUT, TITLE_TAG):
+# Global variables
+title_tag_configurations = []  # 추가된 태그 정보 (데이터 이름, 선택자, 속성)
+
+def add_title_tag_configuration(default_name="", default_selector="", default_attr="text"):
+    """사용자가 UI에서 Title Tag를 추가할 수 있도록 입력 필드를 동적으로 생성"""
+    global title_tag_configurations
+
+    frame = tk.Frame(title_tag_frame)
+    frame.pack(pady=2)
+
+    # 데이터 이름 입력 필드
+    name_label = tk.Label(frame, text="이름:")
+    name_label.grid(row=0, column=0, padx=5)
+    name_entry = tk.Entry(frame, width=15)
+    name_entry.insert(0, default_name)
+    name_entry.grid(row=0, column=1, padx=5)
+
+    # 태그 위치 입력 필드
+    selector_label = tk.Label(frame, text="CSS 선택자:")
+    selector_label.grid(row=0, column=2, padx=5)
+    selector_entry = tk.Entry(frame, width=25)
+    selector_entry.insert(0, default_selector)
+    selector_entry.grid(row=0, column=3, padx=5)
+
+    # 속성 선택 드롭다운
+    attr_label = tk.Label(frame, text="속성:")
+    attr_label.grid(row=0, column=4, padx=5)
+    attr_options = ["text", "href", "src", "alt"]  # 기본 속성 옵션 추가 가능
+    attr_combobox = ttk.Combobox(frame, values=attr_options, width=10)
+    attr_combobox.set(default_attr)  # 기본값 설정
+    attr_combobox.grid(row=0, column=5, padx=5)
+
+    title_tag_configurations.append((name_entry, selector_entry, attr_combobox))
+
+def crawl_data(URL_TMPL, URL_INPUT, TITLE_TAGS):
     driver = webdriver.Chrome()
-    # URL_INPUT : 리스트를 리스트가 감싼 형태 [[1,20240102,3],[1,20240103,4]...]
-    # TITLE_TAG : 딕셔너리를 리스트가 감싼 형태 [{title : tag}, {spec, h3.MuiTypography-root}, ...]
 
-    # URL_TMPL의 {} 개수
-    placeholders = URL_TMPL.count("{}")
-
-    # URL_INPUT이 None, 빈 리스트([]), [[]] 중 하나이면 처리
-    if not URL_INPUT or URL_INPUT == [[]]:
-        if placeholders == 0:
-            # URL에 `{}`가 없으면 그대로 크롤링
-            url = URL_TMPL
-            driver.get(url=url)
-            driver.implicitly_wait(3)  # 페이지 로드 대기
-
-            extracted_data = {}
-            for tag_info in TITLE_TAG:
-                for key, tag in tag_info.items():
-                    try:
-                        element = driver.find_element(By.CSS_SELECTOR, tag)
-                        extracted_data[key] = element.text
-                    except Exception as e:
-                        print(f"태그 {tag}에 대한 데이터 수집 중 오류 발생: {e}")
-                        extracted_data[key] = None
-
-            # 결과를 리스트에 추가
-            results = [{"url": url, **extracted_data}]
-            print(f"단일 URL 크롤링 완료: {url}")
-            driver.quit()
-            save_data_to_file(results)
-            return
-        else:
-            messagebox.showerror("Error", "URL_TEMPLATE에 {}가 포함되어 있지만, URL_INPUT이 비어 있습니다.")
-            driver.quit()
-            return
-    
-    results = []  # 결과를 저장할 리스트
-
-    # URL_INPUT이 정상적인 리스트인 경우 기존 방식대로 실행
-    for idx, data in enumerate(URL_INPUT):
-        if len(data) != placeholders:
-            raise ValueError(f"URL_INPUT의 요소 길이가 URL_TMPL의 {{}} 개수와 일치하지 않습니다: {data}")
-        
-        # 템플릿에 데이터를 삽입하여 URL 생성
-        url = URL_TMPL.format(*data)
-        driver.get(url=url)
-
-        # 로드 대기 (필요에 따라 조정)
+    results = []
+    # URL_INPUT이 없고 URL_TMPL에 {}가 없다면 직접 크롤링 실행
+    if not URL_INPUT and '{}' not in URL_TMPL:
+        driver.get(URL_TMPL)
         driver.implicitly_wait(3)
 
-        # 태그 데이터를 수집하여 딕셔너리로 저장
         extracted_data = {}
-        for tag_info in TITLE_TAG:
-            for key, tag in tag_info.items():
+        for tag in TITLE_TAGS:
+            try:
+                element = driver.find_element(By.CSS_SELECTOR, tag["selector"])
+                extracted_data[tag["name"]] = element.text if tag["attr"] == "text" else element.get_attribute(tag["attr"])
+            except Exception:
+                # 태그가 없거나 에러가 나면 무시하고 넘어감
+                continue
+
+        results.append({**extracted_data, "url": URL_TMPL})
+        print(f"단일 URL 크롤링 완료: {URL_TMPL}")
+    else:
+        for idx, data in enumerate(URL_INPUT):
+            url = URL_TMPL.format(*data)
+            driver.get(url)
+            driver.implicitly_wait(3)
+
+            extracted_data = {}
+
+            for tag in TITLE_TAGS:
                 try:
-                    element = driver.find_element(By.CSS_SELECTOR, tag)
-                    extracted_data[key] = element.text
-                except Exception as e:
-                    print(f"태그 {tag}에 대한 데이터 수집 중 오류 발생: {e}")
-                    extracted_data[key] = None
+                    element = driver.find_element(By.CSS_SELECTOR, tag["selector"])
+                    extracted_data[tag["name"]] = element.text if tag["attr"] == "text" else element.get_attribute(tag["attr"])
+                except Exception:
+                    # 태그가 없거나 에러가 나면 무시하고 넘어감
+                    continue
 
-        # 결과를 results에 추가
-        results.append({
-            "url": url,
-            **extracted_data  # TITLE_TAG로부터 추출된 데이터를 동적으로 추가
-        })
-
-        print(f"[{idx + 1}/{len(URL_INPUT)}] 크롤링 완료: {url}")
-
-        # Apply delay logic
-        apply_delays(idx)
+            results.append({**extracted_data, "url": url})
+            print(f"[{idx + 1}/{len(URL_INPUT)}] 크롤링 완료: {url}")
 
     driver.quit()
-
-    # 결과를 파일에 저장
     save_data_to_file(results)
 
 def run_crawl():
@@ -217,18 +215,13 @@ def run_crawl():
         # 입력 값 가져오기
         url_template = url_template_entry.get().strip()
         url_input_raw = url_input_entry.get().strip()
-        title_tag_raw = title_tag_entry.get().strip()
 
         # 빈 입력값 처리
         if not url_template:
             messagebox.showwarning("Input Error", "URL Template을 입력하세요.")
             return
-        
-        if not title_tag_raw:
-            messagebox.showwarning("Input Error", "Title Tags 필드를 입력하세요.")
-            return
-        
-        # JSON 데이터로 파싱
+
+        # URL Input JSON 데이터로 파싱
         if not url_input_raw:
             url_input = None
         else:
@@ -240,16 +233,16 @@ def run_crawl():
             except json.JSONDecodeError as e:
                 messagebox.showerror("Error", f"URL Input JSON 형식이 올바르지 않습니다: {e}")
                 return
-        
-        # Title Tags JSON 파싱
-        try:
-            title_tag = json.loads(title_tag_raw)
-            if not isinstance(title_tag, list):  # 리스트 형식이 아니면 오류 처리
-                messagebox.showwarning("Input Error", "Title Tags는 리스트 형식이어야 합니다.")
-                return
-        except json.JSONDecodeError as e:
-            messagebox.showerror("Error", f"Title Tags JSON 형식이 올바르지 않습니다: {e}")
-            return
+
+        # UI에서 입력된 Title Tags 정보 가져오기
+        title_tags = []
+        for name_entry, selector_entry, attr_combobox in title_tag_configurations:
+            name = name_entry.get().strip()
+            selector = selector_entry.get().strip()
+            attr = attr_combobox.get().strip()
+
+            if name and selector and attr:
+                title_tags.append({"name": name, "selector": selector, "attr": attr})
 
         # Validate delay configurations
         validated_delays = validate_delays()
@@ -257,7 +250,7 @@ def run_crawl():
             return
 
         # 크롤링 실행
-        crawl_data(url_template, url_input, title_tag)
+        crawl_data(url_template, url_input, title_tags)
         messagebox.showinfo("Success", "Crawling completed successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Error during crawling: {e}")
@@ -280,7 +273,7 @@ def crawl_data_gui():
 # Tkinter GUI 설정
 root = tk.Tk()
 root.title("Dynamic Web Crawler")
-root.geometry("500x500")
+root.geometry("900x600")
 
 # 1. Selenium Update 버튼
 # update_button = tk.Button(root, text="Update Selenium", command=update_selenium, width=20)
@@ -303,10 +296,21 @@ url_input_entry.insert(0, "[[33549], [33988], [33943], [33887]]")
 url_load_button = tk.Button(root, text="Load JSON/JSONL File", command=lambda: load_json_data(url_input_entry))
 url_load_button.pack(pady=5)
 
-ttk.Label(root, text="Title Tags (list of dict):").pack(pady=5)
-title_tag_entry = tk.Entry(root, width=50)
-title_tag_entry.pack(pady=5)
-title_tag_entry.insert(0, '[{"title": "h1.MuiTypography-root"}, {"spec": "h3.MuiTypography-root"}]')
+# ttk.Label(root, text="Title Tags (list of dict):").pack(pady=5)
+# title_tag_entry = tk.Entry(root, width=50)
+# title_tag_entry.pack(pady=5)
+# title_tag_entry.insert(0, '[{"title": "h1.MuiTypography-root"}, {"spec": "h3.MuiTypography-root"}]')
+
+# Title Tag 추가 UI
+ttk.Label(root, text="Title Tags (Name, Selector, Attribute):").pack(pady=5)
+title_tag_frame = tk.Frame(root)
+title_tag_frame.pack(pady=5)
+
+# 기본 Title Tag 한 줄 자동 추가
+add_title_tag_configuration("title", "h1.MuiTypography-root", "text")
+
+add_title_tag_button = tk.Button(root, text="+", command=add_title_tag_configuration)
+add_title_tag_button.pack(pady=5)
 
 # Delay Configuration Section
 ttk.Label(root, text="시간 지연 추가:").pack(pady=5)
